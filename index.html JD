@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JD Fintech - Interactive Financial Planner</title>
+    <!-- Chosen Palette: Corporate Trust -->
+    <!-- Application Structure Plan: The SPA is structured as a user-centric financial planning journey. It begins with a clear Hero section stating the brand's mission ("Securing Investment"). It then details the core services (Investments, Insurance) in a clean, parallel format. The centerpiece is an interactive "Financial Planner" tool where users select a goal and risk level to get instant, personalized, and visual feedback (a dynamic Chart.js doughnut chart for investments and text-based insurance recommendations). Two LLM features were added: 1) Expert Rationale Generator (Investment section) for dynamic justification, and 2) Insurance Gap Analyzer (New dedicated section) for grounded, real-time risk assessment. This structure maximizes engagement and provides immediate expert insight. -->
+    <!-- Visualization & Content Choices: Report Info: Mutual Funds, All Insurance -> Goal: Engage, Personalize, Justify -> Viz/Presentation Method: Interactive form, dynamic Chart.js doughnut chart, dynamically updated text block, and two LLM-powered text generators. -> Interaction: User selects goal/risk, updates chart. Then, user clicks buttons to generate rationale (non-grounded LLM) and gap analysis (grounded LLM). -> Justification: Transforms a passive list of services into an active, intelligent tool, demonstrating expertise and securing investment rationale. -> Library/Method: Chart.js (Canvas), Vanilla JS, Gemini API (Text Generation & Grounding). -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 320px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 320px;
+        }
+        .gradient-text {
+            background: linear-gradient(45deg, #1e3a8a, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .btn-primary {
+            background-color: #1e3a8a; /* blue-900 */
+        }
+        .btn-primary:hover {
+            background-color: #1d4ed8; /* blue-700 */
+        }
+        .section-intro-text {
+            max-width: 65ch;
+        }
+        .llm-output {
+            min-height: 80px;
+            background-color: #f0f9ff; /* sky-50 */
+            border-left: 4px solid #3b82f6; /* blue-500 */
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <header class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold gradient-text">JD FINTECH</h1>
+            <a href="#planner" class="hidden sm:inline-block px-5 py-2 text-sm font-semibold text-white btn-primary rounded-full shadow-lg transition-transform transform hover:scale-105">Get Started</a>
+        </div>
+    </header>
+
+    <main>
+        <section id="hero" class="text-center py-20 px-4 bg-white">
+            <h2 class="text-5xl md:text-6xl font-black text-slate-900 mb-4">Securing Your Financial Future</h2>
+            <p class="max-w-3xl mx-auto text-lg text-slate-600 mb-8">
+                Your trusted partner for achieving financial peace of mind. We provide comprehensive, tailored solutions across investments and insurance to build and protect your wealth.
+            </p>
+            <a href="#planner" class="inline-block px-8 py-3 font-bold text-white btn-primary rounded-full shadow-xl transition-transform transform hover:scale-105">Plan Your Future Today</a>
+        </section>
+
+        <section id="services" class="py-20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h3 class="text-4xl font-bold text-slate-900">Our Core Services</h3>
+                    <p class="mt-4 text-lg text-slate-600 section-intro-text mx-auto">We offer a dual-focused approach to financial security, combining strategic growth opportunities with robust protection plans.
+                    </p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    <div class="bg-white p-8 rounded-xl shadow-lg border-t-4 border-blue-800">
+                        <div class="text-4xl mb-4">💰</div>
+                        <h4 class="text-2xl font-bold mb-3">Investments</h4>
+                        <p class="text-slate-600">Strategic wealth planning designed for growth. We guide you through a diverse range of investment vehicles to meet your long-term goals.</p>
+                        <ul class="mt-4 space-y-2 text-slate-700">
+                            <li class="flex items-start"><span class="text-blue-600 font-bold mr-2">✔</span> Mutual Funds (Equity, Debt, Hybrid)</li>
+                            <li class="flex items-start"><span class="text-blue-600 font-bold mr-2">✔</span> Portfolio Management</li>
+                            <li class="flex items-start"><span class="text-blue-600 font-bold mr-2">✔</span> Goal-Based Financial Planning</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white p-8 rounded-xl shadow-lg border-t-4 border-sky-500">
+                        <div class="text-4xl mb-4">🛡️</div>
+                        <h4 class="text-2xl font-bold mb-3">Insurance</h4>
+                        <p class="text-slate-600">Comprehensive protection for you, your family, and your assets. We help you select the right coverage to mitigate risks effectively.</p>
+                        <ul class="mt-4 space-y-2 text-slate-700">
+                            <li class="flex items-start"><span class="text-sky-600 font-bold mr-2">✔</span> Life & Term Insurance</li>
+                            <li class="flex items-start"><span class="text-sky-600 font-bold mr-2">✔</span> Health & Medical Insurance</li>
+                            <li class="flex items-start"><span class="text-sky-600 font-bold mr-2">✔</span> General Insurance (Motor, Property)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="planner" class="py-20 bg-slate-100">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h3 class="text-4xl font-bold text-slate-900">Interactive Financial Planner</h3>
+                    <p class="mt-4 text-lg text-slate-600 section-intro-text mx-auto">This tool provides a simplified recommendation based on your inputs. For a detailed and personalized strategy, please consult with our expert advisors.</p>
+                </div>
+
+                <div class="bg-white p-8 rounded-xl shadow-2xl max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+                    <div>
+                        <div class="mb-6">
+                            <label for="financial-goal" class="block text-lg font-semibold mb-2 text-slate-800">1. What is your primary financial goal?</label>
+                            <select id="financial-goal" class="w-full p-3 border border-slate-300 rounded-lg bg-slate-50 text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="wealth">Wealth Creation (Long-term Growth)</option>
+                                <option value="tax">Tax Saving (ELSS)</option>
+                                <option value="steady">Steady Income (Retirement)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-lg font-semibold mb-2 text-slate-800">2. What is your risk tolerance?</label>
+                            <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
+                                <label class="flex-1 p-3 border rounded-lg text-center cursor-pointer has-[:checked]:bg-blue-800 has-[:checked]:text-white has-[:checked]:border-blue-800 transition-colors">
+                                    <input type="radio" name="risk-tolerance" value="low" class="sr-only"> Low
+                                </label>
+                                <label class="flex-1 p-3 border rounded-lg text-center cursor-pointer has-[:checked]:bg-blue-800 has-[:checked]:text-white has-[:checked]:border-blue-800 transition-colors">
+                                    <input type="radio" name="risk-tolerance" value="medium" class="sr-only" checked> Medium
+                                </label>
+                                <label class="flex-1 p-3 border rounded-lg text-center cursor-pointer has-[:checked]:bg-blue-800 has-[:checked]:text-white has-[:checked]:border-blue-800 transition-colors">
+                                    <input type="radio" name="risk-tolerance" value="high" class="sr-only"> High
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- LLM Feature 2: Insurance Gap Analysis -->
+                        <div class="mt-8 pt-4 border-t border-slate-200">
+                            <h5 class="font-bold text-xl text-slate-900 mb-3">Insurance Gap Analysis</h5>
+                            <button id="gap-analysis-btn" onclick="runGapAnalysis()" class="w-full px-4 py-3 bg-sky-500 text-white font-semibold rounded-lg hover:bg-sky-600 transition duration-300 flex items-center justify-center space-x-2">
+                                <span>✨ Analyze Top 3 Insurance Gaps</span>
+                                <div id="loading-gap" class="loader hidden"></div>
+                            </button>
+                            <div id="gap-analysis-output" class="llm-output mt-4 p-4 rounded-xl text-sm text-slate-700">
+                                Click the button above to get a grounded analysis of the most common insurance risks for your chosen goal.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-6 rounded-lg">
+                        <h4 class="text-2xl font-bold text-center mb-4">Your Suggested Investment Plan</h4>
+                        <div class="flex flex-col gap-6 items-center">
+                            <div class="chart-container flex-shrink-0">
+                                <canvas id="portfolioChart"></canvas>
+                            </div>
+                            <div id="recommendation" class="flex-grow w-full">
+                                <h5 class="font-bold text-lg mb-2 text-slate-900">Investment Mix:</h5>
+                                <p id="investment-text" class="text-slate-600 mb-4">Your suggested portfolio focuses on a balanced approach to capture growth while managing risk.</p>
+                                
+                                <!-- LLM Feature 1: Investment Rationale -->
+                                <h5 class="font-bold text-lg mt-6 mb-2 text-slate-900">Investment Rationale:</h5>
+                                <button id="rationale-btn" onclick="generateRationale()" class="w-full px-4 py-2 bg-amber-500 text-slate-900 font-semibold rounded-lg hover:bg-amber-600 transition duration-300 flex items-center justify-center space-x-2 text-sm">
+                                    <span>✨ Generate Expert Rationale</span>
+                                    <div id="loading-rationale" class="loader hidden"></div>
+                                </button>
+                                <div id="expert-rationale-output" class="llm-output mt-4 p-4 rounded-xl text-sm text-slate-700">
+                                    Click the button to receive a professional justification for this asset allocation.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Placeholder section for Insurance Gap Analysis output, if not generated inside the planner -->
+        <!-- Since I placed it inside the planner, this is just a comment -->
+
+    </main>
+
+    <footer class="bg-slate-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h3 class="text-2xl font-bold">Ready to Start Your Secure Financial Journey?</h3>
+            <p class="text-slate-300 mt-2 mb-6">Contact JD Fintech today for a personalized consultation.</p>
+            <button onclick="displayContactInfo()" class="px-8 py-3 bg-white text-slate-900 font-bold rounded-full shadow-lg transition-transform transform hover:scale-105">
+                Contact an Advisor
+            </button>
+            <p id="contact-info" class="mt-4 text-lg text-sky-300 h-12"></p>
+        </div>
+    </footer>
+
+    <script>
+        const API_URL_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=';
+        const apiKey = ""; 
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const goalSelect = document.getElementById('financial-goal');
+            const riskRadios = document.querySelectorAll('input[name="risk-tolerance"]');
+            
+            const investmentTextEl = document.getElementById('investment-text');
+            
+            // Defines the suggested portfolio mix (Equity, Debt, Annuity) and descriptive text
+            const portfolioData = {
+                wealth: {
+                    low: { mix: [40, 60, 0], text: 'A conservative mix of Debt and Equity Mutual Funds to ensure steady, long-term growth.' },
+                    medium: { mix: [70, 30, 0], text: 'A balanced portfolio with higher allocation to Equity Mutual Funds for significant wealth creation.' },
+                    high: { mix: [90, 10, 0], text: 'An aggressive, equity-heavy portfolio designed for maximum growth potential over the long term.' }
+                },
+                tax: {
+                    low: { mix: [100, 0, 0], text: 'Focus on ELSS (Equity Linked Savings Schemes) for tax benefits under Section 80C with moderate growth.' },
+                    medium: { mix: [100, 0, 0], text: 'Primary allocation to ELSS Mutual Funds, offering a dual advantage of tax savings and equity growth.' },
+                    high: { mix: [100, 0, 0], text: 'Aggressive investment in ELSS funds to maximize growth potential while availing tax deductions.' }
+                },
+                steady: {
+                    low: { mix: [20, 70, 10], text: 'A conservative portfolio heavily weighted in Debt Funds and Annuity plans for stable, regular income.' },
+                    medium: { mix: [40, 50, 10], text: 'A balanced mix of Equity and Debt funds to provide a combination of growth and steady income streams.' },
+                    high: { mix: [60, 30, 10], text: 'A growth-oriented income plan using a higher allocation to Equity alongside Debt funds.' }
+                }
+            };
+
+            const insuranceRecommendations = {
+                wealth: 'A high-cover Term Insurance policy is crucial to protect your family\'s future and ensure your financial goals are met. A comprehensive Health Insurance plan is also vital.',
+                tax: 'Adequate Health Insurance can provide additional tax benefits and is essential for financial security. Term Insurance is recommended for overall protection.',
+                steady: 'A robust Health Insurance plan is critical to protect your retirement corpus from medical emergencies. A suitable Term Insurance plan ensures your legacy is secure.'
+            };
+            
+            const ctx = document.getElementById('portfolioChart').getContext('2d');
+            const portfolioChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Equity Funds', 'Debt Funds', 'Annuity/Other'],
+                    datasets: [{
+                        data: [70, 30, 0],
+                        backgroundColor: ['#1e3a8a', '#3b82f6', '#93c5fd'],
+                        borderColor: '#f8fafc',
+                        borderWidth: 4,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ${context.raw}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            function updateRecommendations() {
+                const goal = goalSelect.value;
+                const risk = document.querySelector('input[name="risk-tolerance"]:checked').value;
+
+                const recommendation = portfolioData[goal][risk];
+                if (recommendation) {
+                    portfolioChart.data.datasets[0].data = recommendation.mix;
+                    portfolioChart.update();
+                    investmentTextEl.textContent = recommendation.text;
+                }
+
+                const insuranceRec = insuranceRecommendations[goal];
+                if(insuranceRec) {
+                    document.getElementById('insurance-text').textContent = insuranceRec;
+                }
+                
+                // Reset LLM outputs on change
+                document.getElementById('expert-rationale-output').innerHTML = 'Click the button to receive a professional justification for this asset allocation.';
+                document.getElementById('gap-analysis-output').innerHTML = 'Click the button above to get a grounded analysis of the most common insurance risks for your chosen goal.';
+            }
+            
+            goalSelect.addEventListener('change', updateRecommendations);
+            riskRadios.forEach(radio => radio.addEventListener('change', updateRecommendations));
+
+            updateRecommendations(); // Initial load
+        });
+
+        // --- GEMINI API LOGIC ---
+
+        // General function to call the Gemini API with optional grounding and retry logic
+        async function callGemini(userQuery, systemPrompt, useGrounding = false, maxRetries = 5) {
+            const url = API_URL_BASE + apiKey;
